@@ -1,84 +1,128 @@
-# Splay tree implementation in Python
-# Author: AlgorithmTutor
-# Tutorial URL: http://algorithmtutor.com/Data-Structures/Tree/Splay-Trees/
+# Contengency freindly Splay tree implementation in Python
+# Group:Cameron White, *enter names here*
 
 # data structure that represents a node in the tree
-
-import sys
-from typing import Optional, Self
-
 class Node:
-    def  __init__(self, data):
-        self.data = data
-        self.parent: Optional[Self] = None
-        self.left: Optional[Self] = None
-        self.right: Optional[Self] = None
-
-
-class SplayTree:
-    def __init__(self):
-        self.root = None
-
-    def __print_helper(self, currPtr: Optional[Node], indent: str, last: bool):
-        # print the tree structure on the screen
-           if currPtr != None:
-            sys.stdout.write(indent)
-            if last:
-                sys.stdout.write("R----")
-                indent += "     "
-            else:
-                sys.stdout.write("L----")
-                indent += "|    "
-
-            print(currPtr.data)
-
-            self.__print_helper(currPtr.left, indent, False)
-            self.__print_helper(currPtr.right, indent, True)
     
-    def __search_tree_helper(self, node: Optional[Node], key):
-        if node == None or key == node.data:
-            return node
-
-        if key < node.data:
-            return self.__search_tree_helper(node.left, key)
-        return self.__search_tree_helper(node.right, key)
-
-    def __delete_node_helper(self, node, key):
-        x = None
-        t = None 
-        s = None
-        while node != None:
-            if node.data == key:
-                x = node
-
-            if node.data <= key:
-                node = node.right
-            else:
-                node = node.left
-
-        if x == None:
-            print("Couldn't find key in the tree")
-            return
+    def  __init__(self,key,data):
+        #data: the data that is stored
+        #key: how the data will be referneced in the tree
+        # left : left child
+        # right: right child
+        # lock: used to keep contengency
+        # remove: denotes if node was physically removed
+        # dele:deonotes if node was removed lazily, used in lazy splaying
+        #zig: marked if node was removed by zigRight rotation
+        #Cnt: total number of operations  that had been performed on the node
+        #leftCnt: left subtree count
+        #rightCnt: right subtreee count
+        self.data = data
+        self.key = key
+        self.left = None
+        self.right = None
+        self.lock = False
+        self.remove = False
+        self.dele = False
+        self.zig = False
+        self.Cnt = 0
+        self.leftCnt = 0
+        self.rightCnt = 0
         
-        # split operation
-        self.__splay(x)
-        if x.right != None:
-            t = x.right
-            t.parent = None
+class SplayTree_ContFriendly:
+
+    def __init__(self):
+        #root: the root node of BST   
+        self.root = None
+        result = False
+        
+    #######Contention friendly Operations#############
+    
+    def _insert(self,key,value):
+        if self.root is None:
+            self.root = Node(key,value)
+        cur = self.root
+        while(True):
+            nxt = self._getNext(cur,key)
+            if(nxt is None):
+                self.lock(cur)
+                if(self.isValid(cur,key)):
+                    self.unlock(cur)
+                    break
+            else:
+                cur = nxt
+        if cur.key == key:
+            if(cur.dele):
+                cur.dele = False
+                result = True
         else:
-            t = None
+            if cur.key > key:
+                cur.left = Node(key,value)
+            else:
+                cur.right = Node(key,value)
+            result = True
+        self.unlock(cur)
+        return result
+    
+    def _delete(self,key ):
+        cur = self.root
+        result = False
+        while(cur is not None):
+            nxt = self._getnext(cur,key)
+            if nxt is None:
+                lock(cur)
+                if (isValid(cur,key)):
+                    break
+                unlock(cur)
+            else:
+                cur = nxt
+        if (cur.key == key):
+            if not (cur.dele):
+                cur.dele = True
+                result = True
+            unlock(cur)
+        return result
+              
+    def _find(self,key): 
+        cur = self.root
+        result = False
+        while(nxt == self._getnext(cur,key) is not None):
+            cur = nxt
+        if cur.key == key and not (cur.dele):
+            result = True
+            Splay(cur,cur.left,cur.right)
+            cur.selfCnt += 1
+            
+        return result
+    
+    #######Basic Abstract Operations######   
+    def _getNext(self, node, key):
+        rem = node.remove
+        isZig = node.zig
+        if(rem and isZig):
+            nxt = node.right
+        elif(rem):
+            nxt = node.left
+        elif(node.key == key):
+            nxt = None
+        elif(node.key > key):
+            nxt = node.right
+        else:
+            nxt = node.left
+        return nxt
 
-        s = x
-        s.right = None
-        x = None
-
-        # join operation
-        if s.left != None:
-            s.left.parent = None
-
-        self.root = self.__join(s.left, t)
-        s = None
-
+    def _isValid(self, node, key):
+        if(node.remove):
+            return False
+        elif(node.key == key):
+            return True
+        elif(node.key > key):
+            nxt = node.right
+        else:
+            nxt = node.left
+        if(nxt is None):
+            return True
+        return False
+            
     # rotate left at node x
     def __left_rotate(self, x):
         y = x.right
@@ -140,20 +184,6 @@ class SplayTree:
                 # zag-zig rotation
                 self.__right_rotate(x.parent)
                 self.__left_rotate(x.parent)
-
-    # joins two trees s and t
-    def __join(self, s, t):
-        if s == None:
-            return t
-
-        if t == None:
-            return s
-
-        x = self.maximum(s)
-        self.__splay(x)
-        x.right = t
-        t.parent = x
-        return x
 
     def __pre_order_helper(self, node):
         if node != None:
@@ -237,59 +267,4 @@ class SplayTree:
             y = y.parent
         return y
 
-    # insert the key to the tree in its appropriate position
-    def insert(self, key):
-        node =  Node(key)
-        y = None
-        x = self.root
 
-        while x != None:
-            y = x
-            if node.data < x.data:
-                x = x.left
-            else:
-                x = x.right
-
-        # y is parent of x
-        node.parent = y
-        if y == None:
-            self.root = node
-        elif node.data < y.data:
-            y.left = node
-        else:
-            y.right = node
-        # splay the node
-        self.__splay(node)
-
-    # delete the node from the tree
-    def delete_node(self, data):
-        self.__delete_node_helper(self.root, data)
-
-    # print the tree structure on the screen
-    def pretty_print(self):
-        self.__print_helper(self.root, "", True)
-
-if __name__ == '__main__':
-    tree = SplayTree()
-    tree.insert(33)
-    tree.insert(44)
-    tree.insert(67)
-    tree.insert(5)
-    tree.insert(89)
-    tree.insert(41)
-    tree.insert(98)
-    tree.insert(1)
-    tree.pretty_print()
-    tree.search_tree(33)
-    tree.search_tree(44)
-    tree.pretty_print()
-    tree.delete_node(89)
-    tree.delete_node(67)
-    tree.delete_node(41)
-    tree.delete_node(5)
-    tree.pretty_print()
-    tree.delete_node(98)
-    tree.delete_node(1)
-    tree.delete_node(44)
-    tree.delete_node(33)
-    tree.pretty_print()
