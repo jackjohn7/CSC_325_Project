@@ -1,6 +1,10 @@
 # Contengency freindly Splay tree implementation in Python
 # Group:Cameron White, *enter names here*
 
+
+#Import Semaphore for critical section handling
+import threading
+
 # data structure that represents a node in the tree
 class Node:
     
@@ -16,6 +20,7 @@ class Node:
         #Cnt: total number of operations  that had been performed on the node
         #leftCnt: left subtree count
         #rightCnt: right subtreee count
+        #parent pointer
         self.data = data
         self.key = key
         self.left = None
@@ -27,6 +32,7 @@ class Node:
         self.Cnt = 0
         self.leftCnt = 0
         self.rightCnt = 0
+        self.parent = None
         
 class SplayTree_ContFriendly:
 
@@ -35,67 +41,69 @@ class SplayTree_ContFriendly:
         self.root = None
         result = False
         
-    #######Contention friendly Operations#############
-    
-    def _insert(self,key,value):
+    #######Basic Abstract Operations(Contention friendly)#############
+    def insert(self,key,value):
         if self.root is None:
             self.root = Node(key,value)
         cur = self.root
         while(True):
-            nxt = self._getNext(cur,key)
+            nxt = self.getNext(cur,key)
             if(nxt is None):
-                self.lock(cur)
+                self._lock(cur)
                 if(self.isValid(cur,key)):
-                    self.unlock(cur)
+                    self._unlock(cur)
                     break
             else:
                 cur = nxt
         if cur.key == key:
             if(cur.dele):
+                cur.parent 
                 cur.dele = False
+                cur.selfCnt += 1
                 result = True
         else:
             if cur.key > key:
                 cur.left = Node(key,value)
+                cur.left.parent = cur
             else:
                 cur.right = Node(key,value)
+                cur.right.parent = cur
             result = True
-        self.unlock(cur)
+        self._unlock(cur)
         return result
     
-    def _delete(self,key ):
+    def delete(self,key ):
         cur = self.root
         result = False
         while(cur is not None):
-            nxt = self._getnext(cur,key)
+            nxt = self.getnext(cur,key)
             if nxt is None:
-                lock(cur)
+                self._lock(cur)
                 if (isValid(cur,key)):
                     break
-                unlock(cur)
+                self.unlock(cur)
             else:
                 cur = nxt
         if (cur.key == key):
             if not (cur.dele):
                 cur.dele = True
                 result = True
-            unlock(cur)
+            self._unlock(cur)
         return result
               
-    def _find(self,key): 
+    def find(self,key): 
         cur = self.root
         result = False
-        while(nxt == self._getnext(cur,key) is not None):
+        while(nxt = self.getnext(cur,key) is not None):
             cur = nxt
         if cur.key == key and not (cur.dele):
             result = True
-            Splay(cur,cur.left,cur.right)
+            self._splayNose(cur,cur.left,cur.right)
             cur.selfCnt += 1
             
         return result
-    
-    #######Basic Abstract Operations######   
-    def _getNext(self, node, key):
+
+    def getNext(self, node, key):
         rem = node.remove
         isZig = node.zig
         if(rem and isZig):
@@ -110,7 +118,7 @@ class SplayTree_ContFriendly:
             nxt = node.left
         return nxt
 
-    def _isValid(self, node, key):
+    def isValid(self, node, key):
         if(node.remove):
             return False
         elif(node.key == key):
@@ -122,87 +130,156 @@ class SplayTree_ContFriendly:
         if(nxt is None):
             return True
         return False
+    #######Contention friendly Operations#########       
+    def _removeNode(self, parent, x):
+        removed = False
+        if(parent.remove):
+            return removed
+        self._lock(parent)
+        self._lock(x)
+        if not x.dele:
+            self._unlock(parent)
+            self._unlock(child)
+            return removed
+        if (x.left and x.right is not None):
+            self._unlock(parent)
+            self._unlock(x)
+            return removed
+        elif(x.left is not None):
+            child = x.left
+        else:
+            child =x.right
+            x.left = parent
+            x.right = parent
+        x.remove = True
+        removed = True
+        self._unlock(parent)
+        self._unlock(child)
+        return removed
+        
             
-    # rotate left at node x
-    def __left_rotate(self, x):
-        y = x.right
-        x.right = y.left
-        if y.left != None:
-            y.left.parent = x
+########Rotates##########
+    def _ZigRotate(self, parent, x, l):
+        ret = False
+        if parent.remove:
+            return ret
+        if x is None:
+            return ret
+        if l is None:
+            return ret
+        self._lock(parent)
+        self._lock(x)
+        self._lock(l)
+        lRight = l.right
+        xRight = x.right
 
-        y.parent = x.parent
-        if x.parent == None:
-            self.root = y
-        elif x == x.parent.left:
-            x.parent.left = y
+        p = Node(x.key,x.value)
+        p.left = lRight
+        p.right = xRight
+        l.right = temp
+        if x == parent.left:
+            parent.left = l
         else:
-            x.parent.right = y
-        y.left = x
-        x.parent = y
+            parent.right = l
+        x.remove = True
+        x.zig = True
 
-    # rotate right at node x
-    def __right_rotate(self, x):
-        y = x.left
-        x.left = y.right
-        if y.right != None:
-            y.right.parent = x
+        l.parent = parent
+        x.parent = l
         
-        y.parent = x.parent;
-        if x.parent == None:
-            self.root = y
-        elif x == x.parent.right:
-            x.parent.right = y
-        else:
-            x.parent.left = y
-        
-        y.right = x
-        x.parent = y
+        self.unlock(l)
+        self.unlock(x)
+        self.unlock(parent)
+        ret = True
+        return ret
+    
+        def _ZigZagRotate(self, grand, parent, x, r):
+            ret = False
+            if grand.remove:
+                return ret
+            if parent is None:
+                return ret
+            if x is None:
+                 return ret
+            if r is None:
+                 return ret
+            self.lock(grand)
+            self.lock(parent)
+            self.lock(x)
+            self.lock(r)
+            
+            xLeft = x.left
+            rLeft = r.left
+            rRight = r.right
+            pRight = parent.right
 
-    # Splaying operation. It moves x to the root of the tree
-    def __splay(self, x):
-        while x.parent != None:
-            if x.parent.parent == None:
-                if x == x.parent.left:
-                    # zig rotation
-                    self.__right_rotate(x.parent)
-                else:
-                    # zag rotation
-                    self.__left_rotate(x.parent)
-            elif x == x.parent.left and x.parent == x.parent.parent.left:
-                # zig-zig rotation
-                self.__right_rotate(x.parent.parent)
-                self.__right_rotate(x.parent)
-            elif x == x.parent.right and x.parent == x.parent.parent.right:
-                # zag-zag rotation
-                self.__left_rotate(x.parent.parent)
-                self.__left_rotate(x.parent)
-            elif x == x.parent.right and x.parent == x.parent.parent.left:
-                # zig-zag rotation
-                self.__left_rotate(x.parent)
-                self.__right_rotate(x.parent)
+            temp = Node(x.key,x.value)
+            temp.left = xLeft
+            temp.right = rLeft
+            r.left = temp
+
+            ptemp = Node(parent.key,parent.value)
+            ptemp.left = rRight
+            ptemp.right = parent.Right
+            
+            r.right = ptemp
+            
+            if parent == grand.left:
+                grand.left = r
             else:
-                # zag-zig rotation
-                self.__right_rotate(x.parent)
-                self.__left_rotate(x.parent)
+                grand.right = r
+                
+            x.remove = True
+            parent.remove = True
+            ret = True
+            self.unlock(r)
+            self.unlock(x)
+            self.unlock(parent)
+            self.unlock(grand)
+            return ret
 
-    def __pre_order_helper(self, node):
-        if node != None:
-            sys.stdout.write(node.data + " ")
-            self.__pre_order_helper(node.left)
-            self.__pre_order_helper(node.right)
 
-    def __in_order_helper(self, node):
-        if node != None:
-            self.__in_order_helper(node.left)
-            sys.stdout.write(node.data + " ")
-            self.__in_order_helper(node.right)
+    #############Background Operations###################
+    def _longSplayDFS(self, x):
+        if x is None:
+            return
+        self._longSplayDFS(x.left)
+        self._longSplayDFS(x.right)
+        if x.left is not None and x.left.dele:
+            self._removeNode(x,x.left)
+            
+        if x.right is not None and x.right.dele:
+            self._removeNode(x,x.right)
+            
+        self._propagateCounter(x)
+        if x.left is None or x.right is None:
+            self._splayNode(parent,x,x.left,x.right)
+            '''Note* create find_parent alg'''
+        else:
+            return
 
-    def __post_order_helper(self, node):
-        if node != None:
-            self.__post_order_helper(node.left)
-            self.__post_order_helper(node.right)
-            print(node.data + " ", end="")
+     def _propogateCounter(self,x):
+         if x.left is None:
+             x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.Cnt
+        else:
+            x.leftCnt = 0
 
+    def _backGroundLongSplay(self):
+        while True:
+            self._longSplayDFS(self.root)
+    
+    #called by find and insert(not currently implemented)
+    def _splayNode(parent, l, n, r):
+        nPlusLeftCnt = l.Cnt + l.leftCnt
+        pPlusRightCnt = parent.Cnt + parent.rightCnt
+        nRightCnt = l.rightCnt
+        if nPlusRightCnt >= pPlusRightCount:
+            grand = parent.parent
+            self._Zig(grand, parent, l)
+            parent.leftCnt = l.right.rightCnt
+            l.rightCnt = l.rightCnt +
+            
+##########################################################3
     # Pre-Order traversal
     # Node->Left Subtree->Right Subtree
     def preorder(self):
