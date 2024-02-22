@@ -35,35 +35,42 @@ class Node:
         self.parent = None
         
 class SplayTree_ContFriendly:
-
+    #Note* tree does not allow duplicates
     def __init__(self):
         #root: the root node of BST   
         self.root = None
         result = False
         
     #######Basic Abstract Operations(Contention friendly)#############
+    #returns true if inserted into tree
     def insert(self,key,value):
         result = False
+        #if no nodes create root
         if self.root is None:
             self.root = Node(key,value)
             result = True
             return result
         cur = self.root
+        #while the next node is not null, find next valid node
         while(True):
             nxt = self.getNext(cur,key)
             if(nxt is None):
                 self._lock(cur)
+        #######critical section##################
                 if(self.isValid(cur,key)):
                     break
+        ########critical section exit 1##########
                 self._unlock(cur)
             else:
                 cur = nxt
+        #if key already exist, but is lazily deleted, make it reinstate its license(lol)
         if cur.key == key:
             if(cur.dele):
                 cur.parent 
                 cur.dele = False
-                cur.selfCnt += 1
+                cur.Cnt += 1
                 result = True
+        #otherwise, create new leaf based on if the key is greater or less than the current node
         else:
             if cur.key > key:
                 cur.left = Node(key,value)
@@ -71,13 +78,17 @@ class SplayTree_ContFriendly:
             else:
                 cur.right = Node(key,value)
                 cur.right.parent = cur
+            #set result to true
             result = True
+        ########critical section exit 2##########
+            
         self._unlock(cur)
         return result
-    
+    #returns true if deleted into tree
     def delete(self,key):
         cur = self.root
         result = False
+        #while nxt is not none, find valid node to be deleted
         while True:
             nxt = self.getNext(cur,key)
             if nxt is None:
@@ -87,6 +98,7 @@ class SplayTree_ContFriendly:
                 self.unlock(cur)
             else:          
                 cur = nxt
+        #if the current node is the node to be deleted, lazily delete it
         if (cur.key == key):
             if not(cur.dele):
                 cur.dele = True
@@ -103,7 +115,7 @@ class SplayTree_ContFriendly:
         if cur.key == key and not (cur.dele):
             result = True
             self._splayNose(cur,cur.left,cur.right)
-            cur.selfCnt += 1
+            cur.Cnt += 1
             
         return result
 
@@ -162,7 +174,7 @@ class SplayTree_ContFriendly:
         return removed
         
             
-########Rotates##########
+########Rotates#############################################
     def _ZigRotate(self, parent, x, l):
         ret = False
         if parent.remove:
@@ -243,7 +255,7 @@ class SplayTree_ContFriendly:
         return ret
 
 
-    #############Background Operations###################
+###################Background Operations###################
     def _longSplayDFS(self, x):
         if x is None:
             return
@@ -296,6 +308,7 @@ class SplayTree_ContFriendly:
     def _unlock(self,n):
         n.lock.release()     
 ############################################################
+        ''' hell nawl I aint made for this G
     # Pre-Order traversal
     # Node->Left Subtree->Right Subtree
     def preorder(self):
@@ -359,7 +372,7 @@ class SplayTree_ContFriendly:
             x = y
             y = y.parent
         return y
-
+'''
 ################Test Main########################
 x = SplayTree_ContFriendly()
 print(x.insert(3,'w'))
@@ -367,3 +380,5 @@ print(x.insert(4,'q'))
 print(x.insert(5,'y'))
 print(x.delete(5))
 print(x.delete(5))
+print(x.delete(4))
+print(x.insert(4,'q'))
