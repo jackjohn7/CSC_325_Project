@@ -109,12 +109,12 @@ class SplayTree_ContFriendly:
     def find(self,key): 
         cur = self.root
         result = False
-        while(self.getnext(cur,key) is not None):
-            nxt = self.getnext(cur,key)
+        while(self.getNext(cur,key) is not None):
+            nxt = self.getNext(cur,key)
             cur = nxt
-        if cur.key == key and not (cur.dele):
+        if cur.key == key and not cur.dele:
             result = True
-            self._splayNose(cur,cur.left,cur.right)
+            self._splayNode(cur,cur.left,cur.right)
             cur.Cnt += 1
             
         return result
@@ -140,9 +140,9 @@ class SplayTree_ContFriendly:
         elif(node.key == key):
             return True
         elif(node.key > key):
-            nxt = node.right
-        else:
             nxt = node.left
+        else:
+            nxt = node.right
         if(nxt is None):
             return True
         return False
@@ -270,7 +270,6 @@ class SplayTree_ContFriendly:
         self._propagateCounter(x)
         if x.left is None or x.right is None:
             self._splayNode(parent,x,x.left,x.right)
-            '''Note* create find_parent alg'''
         else:
             return
 
@@ -285,21 +284,21 @@ class SplayTree_ContFriendly:
             self._longSplayDFS(self.root)
     
     #called by find and insert(not currently implemented)
-    def _splayNode(parent, l, n, r):
-        nPlusLeftCnt = l.Cnt + l.leftCnt
-        pPlusRightCnt = parent.Cnt + parent.rightCnt
-        nRightCnt = l.rightCnt
-        if nPlusRightCnt >= pPlusRightCount:
+    def _splayNode(self,parent, l, r):
+        nPlusLeftCnt = l.Cnt + l.leftCnt if l else 0
+        pPlusRightCnt = parent.Cnt + parent.rightCnt if parent else 0
+        nRightCnt = l.rightCnt if l else 0
+        if nRightCnt >= pPlusRightCnt:
             grand = parent.parent
             self._ZigZagRotate(grand, parent, l)
-            parent.leftCnt = l.right.rightCnt
+            parent.leftCnt = l.right.rightCnt if l and l.right else 0
             l.rightCnt = l.right.leftCnt
             l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
             l.rightCnt = l.rightCnt + nRightCnt
-        elif(nPlusLeftCnt > pPlusRightCnt):
+        elif nPlusLeftCnt > pPlusRightCnt:
             grand = parent.parent
             self.zigRotate(grand,parent,l)
-            parent.leftCnt = l.rightCnt
+            parent.leftCnt = l.rightCnt if l and l.right else 0
             l.rightCnt = l.rightCnt + pPlusRightCnt
 
 ################critical section handling###################
@@ -375,10 +374,25 @@ class SplayTree_ContFriendly:
 '''
 ################Test Main########################
 x = SplayTree_ContFriendly()
-print(x.insert(3,'w'))
+print(x.insert(10,'w'))
 print(x.insert(4,'q'))
-print(x.insert(5,'y'))
+print(x.insert(5,'t'))
+print(x.insert(6,'o'))
+print(x.insert(2,'r'))
+print(x.insert(8,'d'))
+print(x.insert(0,'p'))
+print(x.insert(1,'q'))
+print(x.insert(5,'t'))
+print(x.insert(6,'o'))
+print(x.insert(7,'r'))
+print(x.insert(11,'d'))
+print(x.insert(12,'p'))
+print(x.insert(13,'q'))
+print(x.insert(14,'p'))
+print(x.insert(15,'q'))
 print(x.delete(5))
 print(x.delete(5))
 print(x.delete(4))
 print(x.insert(4,'q'))
+print(x.find(5))
+print(x.find(4))
