@@ -94,7 +94,8 @@ class SplayTree_ContFriendly:
     def find(self,key): 
         cur = self.root
         result = False
-        while(nxt = self.getnext(cur,key) is not None):
+        while(self.getnext(cur,key) is not None):
+            nxt = self.getnext(cur,key)
             cur = nxt
         if cur.key == key and not (cur.dele):
             result = True
@@ -193,50 +194,50 @@ class SplayTree_ContFriendly:
         ret = True
         return ret
     
-        def _ZigZagRotate(self, grand, parent, x, r):
-            ret = False
-            if grand.remove:
-                return ret
-            if parent is None:
-                return ret
-            if x is None:
-                 return ret
-            if r is None:
-                 return ret
-            self.lock(grand)
-            self.lock(parent)
-            self.lock(x)
-            self.lock(r)
-            
-            xLeft = x.left
-            rLeft = r.left
-            rRight = r.right
-            pRight = parent.right
-
-            temp = Node(x.key,x.value)
-            temp.left = xLeft
-            temp.right = rLeft
-            r.left = temp
-
-            ptemp = Node(parent.key,parent.value)
-            ptemp.left = rRight
-            ptemp.right = parent.Right
-            
-            r.right = ptemp
-            
-            if parent == grand.left:
-                grand.left = r
-            else:
-                grand.right = r
-                
-            x.remove = True
-            parent.remove = True
-            ret = True
-            self.unlock(r)
-            self.unlock(x)
-            self.unlock(parent)
-            self.unlock(grand)
+    def _ZigZagRotate(self, grand, parent, x, r):
+        ret = False
+        if grand.remove:
             return ret
+        if parent is None:
+            return ret
+        if x is None:
+                return ret
+        if r is None:
+                return ret
+        self.lock(grand)
+        self.lock(parent)
+        self.lock(x)
+        self.lock(r)
+            
+        xLeft = x.left
+        rLeft = r.left
+        rRight = r.right
+        pRight = parent.right
+
+        temp = Node(x.key,x.value)
+        temp.left = xLeft
+        temp.right = rLeft
+        r.left = temp
+
+        ptemp = Node(parent.key,parent.value)
+        ptemp.left = rRight
+        ptemp.right = parent.Right
+            
+        r.right = ptemp
+            
+        if parent == grand.left:
+            grand.left = r
+        else:
+            grand.right = r
+                
+        x.remove = True
+        parent.remove = True
+        ret = True
+        self.unlock(r)
+        self.unlock(x)
+        self.unlock(parent)
+        self.unlock(grand)
+        return ret
 
 
     #############Background Operations###################
@@ -258,9 +259,9 @@ class SplayTree_ContFriendly:
         else:
             return
 
-     def _propogateCounter(self,x):
-         if x.left is None:
-             x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.Cnt
+    def _propogateCounter(self,x):
+        if x.left is None:
+            x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.Cnt
         else:
             x.leftCnt = 0
 
@@ -275,10 +276,18 @@ class SplayTree_ContFriendly:
         nRightCnt = l.rightCnt
         if nPlusRightCnt >= pPlusRightCount:
             grand = parent.parent
-            self._Zig(grand, parent, l)
+            self._ZigZagRotate(grand, parent, l)
             parent.leftCnt = l.right.rightCnt
-            l.rightCnt = l.rightCnt +
-            
+            l.rightCnt = l.right.leftCnt
+            l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
+            l.rightCnt = l.rightCnt + nRightCnt
+        elif(nPlusLeftCnt > pPlusRightCnt):
+            grand = parent.parent
+            self.zigRotate(grand,parent,l)
+            parent.leftCnt = l.rightCnt
+            l.rightCnt = l.rightCnt + pPlusRightCnt
+        
+             
 ##########################################################3
     # Pre-Order traversal
     # Node->Left Subtree->Right Subtree
