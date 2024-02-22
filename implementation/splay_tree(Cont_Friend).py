@@ -77,6 +77,7 @@ class SplayTree_ContFriendly:
     
     def delete(self,key):
         cur = self.root
+        result = False
         while True:
             nxt = self.getNext(cur,key)
             if nxt is None:
@@ -116,9 +117,9 @@ class SplayTree_ContFriendly:
         elif(node.key == key):
             nxt = None
         elif(node.key > key):
-            nxt = node.right
-        else:
             nxt = node.left
+        else:
+            nxt = node.right
         return nxt
 
     def isValid(self, node, key):
@@ -364,4 +365,5 @@ x = SplayTree_ContFriendly()
 print(x.insert(3,'w'))
 print(x.insert(4,'q'))
 print(x.insert(5,'y'))
-print(x.delete(3))
+print(x.delete(5))
+print(x.delete(5))
