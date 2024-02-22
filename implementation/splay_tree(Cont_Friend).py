@@ -13,7 +13,7 @@ class Node:
         #key: how the data will be referneced in the tree
         # left : left child
         # right: right child
-        # lock: used to keep contengency
+        # lock: used to keep contengency, locks threads fcritical sections of code
         # remove: denotes if node was physically removed
         # dele:deonotes if node was removed lazily, used in lazy splaying
         #zig: marked if node was removed by zigRight rotation
@@ -25,7 +25,7 @@ class Node:
         self.key = key
         self.left = None
         self.right = None
-        self.lock = False
+        self.lock = threading.Lock()
         self.remove = False
         self.dele = False
         self.zig = False
@@ -43,16 +43,19 @@ class SplayTree_ContFriendly:
         
     #######Basic Abstract Operations(Contention friendly)#############
     def insert(self,key,value):
+        result = False
         if self.root is None:
             self.root = Node(key,value)
+            result = True
+            return result
         cur = self.root
         while(True):
             nxt = self.getNext(cur,key)
             if(nxt is None):
                 self._lock(cur)
                 if(self.isValid(cur,key)):
-                    self._unlock(cur)
                     break
+                self._unlock(cur)
             else:
                 cur = nxt
         if cur.key == key:
@@ -72,23 +75,22 @@ class SplayTree_ContFriendly:
         self._unlock(cur)
         return result
     
-    def delete(self,key ):
+    def delete(self,key):
         cur = self.root
-        result = False
-        while(cur is not None):
-            nxt = self.getnext(cur,key)
+        while True:
+            nxt = self.getNext(cur,key)
             if nxt is None:
                 self._lock(cur)
-                if (isValid(cur,key)):
+                if self.isValid(cur,key):
                     break
                 self.unlock(cur)
-            else:
+            else:          
                 cur = nxt
         if (cur.key == key):
-            if not (cur.dele):
+            if not(cur.dele):
                 cur.dele = True
                 result = True
-            self._unlock(cur)
+        self._unlock(cur)
         return result
               
     def find(self,key): 
@@ -286,9 +288,13 @@ class SplayTree_ContFriendly:
             self.zigRotate(grand,parent,l)
             parent.leftCnt = l.rightCnt
             l.rightCnt = l.rightCnt + pPlusRightCnt
-        
-             
-##########################################################3
+
+################critical section handling###################
+    def _lock(self,n):
+        n.lock.acquire()
+    def _unlock(self,n):
+        n.lock.release()     
+############################################################
     # Pre-Order traversal
     # Node->Left Subtree->Right Subtree
     def preorder(self):
@@ -353,4 +359,9 @@ class SplayTree_ContFriendly:
             y = y.parent
         return y
 
-
+################Test Main########################
+x = SplayTree_ContFriendly()
+print(x.insert(3,'w'))
+print(x.insert(4,'q'))
+print(x.insert(5,'y'))
+print(x.delete(3))
