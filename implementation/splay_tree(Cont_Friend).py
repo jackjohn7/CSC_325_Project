@@ -56,10 +56,10 @@ class SplayTree_ContFriendly:
             nxt = self.getNext(cur,key)
             if(nxt is None):
                 self._lock(cur)
-        #######critical section##################
+##################critical section#####################################################
                 if(self.isValid(cur,key)):
                     break
-        ########critical section exit 1##########
+#################critical section exit 1###############################################
                 self._unlock(cur)
             else:
                 cur = nxt
@@ -80,10 +80,11 @@ class SplayTree_ContFriendly:
                 cur.right.parent = cur
             #set result to true
             result = True
-        ########critical section exit 2##########
+################critical section exit 2##############################################
             
         self._unlock(cur)
         return result
+    
     #returns true if deleted into tree
     def delete(self,key):
         cur = self.root
@@ -105,20 +106,24 @@ class SplayTree_ContFriendly:
                 result = True
         self._unlock(cur)
         return result
-              
+    
+    #checks if node exist in tree         
     def find(self,key): 
         cur = self.root
         result = False
+        #finds node and check if valid
         while(self.getNext(cur,key) is not None):
             nxt = self.getNext(cur,key)
             cur = nxt
+        #if not deleted, return true
         if cur.key == key and not cur.dele:
             result = True
             self._splayNode(cur,cur.left,cur.right)
             cur.Cnt += 1
             
         return result
-
+    
+    #finds next available node, returns none if found otherwise determines if nex node based on key or if it was deleted
     def getNext(self, node, key):
         rem = node.remove
         isZig = node.zig
@@ -133,7 +138,8 @@ class SplayTree_ContFriendly:
         else:
             nxt = node.right
         return nxt
-
+    
+    #similar to getNext, however it returns a boolean
     def isValid(self, node, key):
         if(node.remove):
             return False
@@ -146,35 +152,9 @@ class SplayTree_ContFriendly:
         if(nxt is None):
             return True
         return False
-    #######Contention friendly Operations#########       
-    def _removeNode(self, parent, x):
-        removed = False
-        if(parent.remove):
-            return removed
-        self._lock(parent)
-        self._lock(x)
-        if not x.dele:
-            self._unlock(parent)
-            self._unlock(child)
-            return removed
-        if (x.left and x.right is not None):
-            self._unlock(parent)
-            self._unlock(x)
-            return removed
-        elif(x.left is not None):
-            child = x.left
-        else:
-            child =x.right
-            x.left = parent
-            x.right = parent
-        x.remove = True
-        removed = True
-        self._unlock(parent)
-        self._unlock(child)
-        return removed
-        
-            
+          
 ########Rotates#############################################
+    #as explained in theory
     def _ZigRotate(self, parent, x, l):
         ret = False
         if parent.remove:
@@ -186,6 +166,7 @@ class SplayTree_ContFriendly:
         self._lock(parent)
         self._lock(x)
         self._lock(l)
+        ######################critical section#######################
         lRight = l.right
         xRight = x.right
 
@@ -202,13 +183,13 @@ class SplayTree_ContFriendly:
 
         l.parent = parent
         x.parent = l
-        
+        ############################################################
         self.unlock(l)
         self.unlock(x)
         self.unlock(parent)
         ret = True
         return ret
-    
+    #explained in theory
     def _ZigZagRotate(self, grand, parent, x, r):
         ret = False
         if grand.remove:
@@ -223,7 +204,7 @@ class SplayTree_ContFriendly:
         self.lock(parent)
         self.lock(x)
         self.lock(r)
-            
+        ######################critical section#######################    
         xLeft = x.left
         rLeft = r.left
         rRight = r.right
@@ -248,6 +229,7 @@ class SplayTree_ContFriendly:
         x.remove = True
         parent.remove = True
         ret = True
+        ############################################################
         self.unlock(r)
         self.unlock(x)
         self.unlock(parent)
@@ -256,6 +238,41 @@ class SplayTree_ContFriendly:
 
 
 ###################Background Operations###################
+    #following operation should only be used by background thread, exception splay
+    
+    #physically deletes nodes based on if an eternal node has children
+    def _removeNode(self, parent, x):
+        removed = False
+        if(parent.remove):
+            return removed
+        self._lock(parent)
+        self._lock(x)
+        ##########critical section####################### 
+        if not x.dele:
+            ######end 1#####
+            self._unlock(parent)
+            self._unlock(child)
+
+            return removed
+        if (x.left and x.right is not None):
+            ######end 2#####
+            self._unlock(parent)
+            self._unlock(x)
+            return removed
+        #prioritses left
+        elif(x.left is not None):
+            child = x.left
+        else:
+            child =x.right
+            x.left = parent
+            x.right = parent
+        x.remove = True
+        removed = True
+        ######end 3#####
+        self._unlock(parent)
+        self._unlock(child)
+        return removed
+        
     def _longSplayDFS(self, x):
         if x is None:
             return
@@ -278,7 +295,7 @@ class SplayTree_ContFriendly:
             x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.Cnt
         else:
             x.leftCnt = 0
-
+    #called by background thread to perform long splay operation and physically delete nodes
     def _backGroundLongSplay(self):
         while True:
             self._longSplayDFS(self.root)
