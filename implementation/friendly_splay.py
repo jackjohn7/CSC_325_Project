@@ -1,31 +1,44 @@
 # Contengency freindly Splay tree implementation in Python
-# Group:Cameron White, *enter names here*
+# Group:Cameron White, Jack Branch, Bradford Stephens
 
 
 #Import Semaphore for critical section handling
-import threading
+from threading import Lock
+from typing import Any, Optional, Self
 
 # data structure that represents a node in the tree
 class Node:
+    # the data that is stored
+    data: Any
+    # how the data will be referenced in the tree
+    key: int
+    # left child
+    left: Optional[Self]
+    # right child
+    right: Optional[Self]
+    # used to prevent data races, locks threads critical sections of code
+    lock: Lock
+    # denotes if node was physically removed
+    remove: bool
+    # deonotes if node was removed lazily, used in lazy splaying
+    dele: bool
+    # marked if node was removed by zigRight rotation
+    zig: bool
+    # total number of operations  that had been performed on the node
+    Cnt: int
+    # left subtree count
+    leftCnt: int
+    # right subtreee count
+    rightCnt: int
+    # parent Node pointer
+    parent: Optional[Self]
     
     def  __init__(self,key,data):
-        #data: the data that is stored
-        #key: how the data will be referneced in the tree
-        # left : left child
-        # right: right child
-        # lock: used to keep contengency, locks threads fcritical sections of code
-        # remove: denotes if node was physically removed
-        # dele:deonotes if node was removed lazily, used in lazy splaying
-        #zig: marked if node was removed by zigRight rotation
-        #Cnt: total number of operations  that had been performed on the node
-        #leftCnt: left subtree count
-        #rightCnt: right subtreee count
-        #parent pointer
         self.data = data
         self.key = key
         self.left = None
         self.right = None
-        self.lock = threading.Lock()
+        self.lock = Lock()
         self.remove = False
         self.dele = False
         self.zig = False
@@ -34,7 +47,7 @@ class Node:
         self.rightCnt = 0
         self.parent = None
         
-class SplayTree_ContFriendly:
+class ConcurrentSplayTree:
     #Note* tree does not allow duplicates
     def __init__(self):
         #root: the root node of BST   
@@ -53,11 +66,11 @@ class SplayTree_ContFriendly:
         cur = self.root
         #while the next node is not null, find next valid node
         while(True):
-            nxt = self.getNext(cur,key)
+            nxt = self.get_next(cur,key)
             if(nxt is None):
                 self._lock(cur)
 ##################critical section#####################################################
-                if(self.isValid(cur,key)):
+                if(self.is_valid(cur,key)):
                     break
 #################critical section exit 1###############################################
                 self._unlock(cur)
@@ -87,16 +100,18 @@ class SplayTree_ContFriendly:
     
     #returns true if deleted into tree
     def delete(self,key):
+        if self.root is None:
+            return False
         cur = self.root
         result = False
         #while nxt is not none, find valid node to be deleted
         while True:
-            nxt = self.getNext(cur,key)
+            nxt = self.get_next(cur,key)
             if nxt is None:
                 self._lock(cur)
-                if self.isValid(cur,key):
+                if self.is_valid(cur,key):
                     break
-                self.unlock(cur)
+                self._unlock(cur)
             else:          
                 cur = nxt
         #if the current node is the node to be deleted, lazily delete it
@@ -108,23 +123,25 @@ class SplayTree_ContFriendly:
         return result
     
     #checks if node exist in tree         
-    def find(self,key): 
-        cur = self.root
+    def find(self,key: int): 
         result = False
+        if self.root is None:
+            return result
+        cur = self.root
         #finds node and check if valid
-        while(self.getNext(cur,key) is not None):
-            nxt = self.getNext(cur,key)
+        while (nxt := self.get_next(cur, key)) is not None:
+            #nxt = self.getNext(cur,key)
             cur = nxt
         #if not deleted, return true
         if cur.key == key and not cur.dele:
             result = True
-            self._splayNode(cur,cur.left,cur.right)
+            self._splay_node(cur, cur.left, cur.right)
             cur.Cnt += 1
             
         return result
     
     #finds next available node, returns none if found otherwise determines if nex node based on key or if it was deleted
-    def getNext(self, node, key):
+    def get_next(self, node: Node, key: int) -> Optional[Node]:
         rem = node.remove
         isZig = node.zig
         if(rem and isZig):
@@ -140,7 +157,7 @@ class SplayTree_ContFriendly:
         return nxt
     
     #similar to getNext, however it returns a boolean
-    def isValid(self, node, key):
+    def is_valid(self, node, key):
         if(node.remove):
             return False
         elif(node.key == key):
@@ -155,7 +172,7 @@ class SplayTree_ContFriendly:
           
 ########Rotates#############################################
     #as explained in theory
-    def _ZigRotate(self, parent, x, l):
+    def _zig_rotate(self, parent, x, l):
         ret = False
         if parent.remove:
             return ret
@@ -184,13 +201,13 @@ class SplayTree_ContFriendly:
         l.parent = parent
         x.parent = l
         ############################################################
-        self.unlock(l)
-        self.unlock(x)
-        self.unlock(parent)
+        self._unlock(l)
+        self._unlock(x)
+        self._unlock(parent)
         ret = True
         return ret
     #explained in theory
-    def _ZigZagRotate(self, grand, parent, x, r):
+    def _zig_zag_rotate(self, grand, parent, x, r):
         ret = False
         if grand.remove:
             return ret
@@ -200,10 +217,10 @@ class SplayTree_ContFriendly:
                 return ret
         if r is None:
                 return ret
-        self.lock(grand)
-        self.lock(parent)
-        self.lock(x)
-        self.lock(r)
+        self._lock(grand)
+        self._lock(parent)
+        self._lock(x)
+        self._lock(r)
         ######################critical section#######################    
         xLeft = x.left
         rLeft = r.left
@@ -230,10 +247,10 @@ class SplayTree_ContFriendly:
         parent.remove = True
         ret = True
         ############################################################
-        self.unlock(r)
-        self.unlock(x)
-        self.unlock(parent)
-        self.unlock(grand)
+        self._unlock(r)
+        self._unlock(x)
+        self._unlock(parent)
+        self._unlock(grand)
         return ret
 
 
@@ -241,7 +258,7 @@ class SplayTree_ContFriendly:
     #following operation should only be used by background thread, exception splay
     
     #physically deletes nodes based on if an eternal node has children
-    def _removeNode(self, parent, x):
+    def _remove_node(self, parent, x):
         removed = False
         if(parent.remove):
             return removed
@@ -273,41 +290,43 @@ class SplayTree_ContFriendly:
         self._unlock(child)
         return removed
         
-    def _longSplayDFS(self, x):
+    def _longSplayDFS(self, x: Optional[Node]):
         if x is None:
             return
         self._longSplayDFS(x.left)
         self._longSplayDFS(x.right)
         if x.left is not None and x.left.dele:
-            self._removeNode(x,x.left)
+            self._remove_node(x,x.left)
             
         if x.right is not None and x.right.dele:
-            self._removeNode(x,x.right)
+            self._remove_node(x,x.right)
             
-        self._propagateCounter(x)
+        self._propagate_counter(x)
         if x.left is None or x.right is None:
-            self._splayNode(parent,x,x.left,x.right)
+            # JQ: Should parent be `x.parent`?
+            self._splay_node(parent,x,x.left,x.right)
         else:
             return
 
-    def _propogateCounter(self,x):
+    def _propagate_counter(self,x):
         if x.left is None:
             x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.Cnt
         else:
             x.leftCnt = 0
     #called by background thread to perform long splay operation and physically delete nodes
-    def _backGroundLongSplay(self):
+    def _background_long_splay(self):
         while True:
             self._longSplayDFS(self.root)
     
     #called by find and insert(not currently implemented)
-    def _splayNode(self,parent, l, r):
+    def _splay_node(self, parent: Node, l: Node, r: Node):
         nPlusLeftCnt = l.Cnt + l.leftCnt if l else 0
         pPlusRightCnt = parent.Cnt + parent.rightCnt if parent else 0
         nRightCnt = l.rightCnt if l else 0
         if nRightCnt >= pPlusRightCnt:
             grand = parent.parent
-            self._ZigZagRotate(grand, parent, l)
+            # JQ: missing `r` argument
+            self._zig_zag_rotate(grand, parent, l)
             parent.leftCnt = l.right.rightCnt if l and l.right else 0
             l.rightCnt = l.right.leftCnt
             l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
@@ -390,26 +409,27 @@ class SplayTree_ContFriendly:
         return y
 '''
 ################Test Main########################
-x = SplayTree_ContFriendly()
-print(x.insert(10,'w'))
-print(x.insert(4,'q'))
-print(x.insert(5,'t'))
-print(x.insert(6,'o'))
-print(x.insert(2,'r'))
-print(x.insert(8,'d'))
-print(x.insert(0,'p'))
-print(x.insert(1,'q'))
-print(x.insert(5,'t'))
-print(x.insert(6,'o'))
-print(x.insert(7,'r'))
-print(x.insert(11,'d'))
-print(x.insert(12,'p'))
-print(x.insert(13,'q'))
-print(x.insert(14,'p'))
-print(x.insert(15,'q'))
-print(x.delete(5))
-print(x.delete(5))
-print(x.delete(4))
-print(x.insert(4,'q'))
-print(x.find(5))
-print(x.find(4))
+if __name__ == "__main__":
+    x = ConcurrentSplayTree()
+    print(x.insert(10,'w'))
+    print(x.insert(4,'q'))
+    print(x.insert(5,'t'))
+    print(x.insert(6,'o'))
+    print(x.insert(2,'r'))
+    print(x.insert(8,'d'))
+    print(x.insert(0,'p'))
+    print(x.insert(1,'q'))
+    print(x.insert(5,'t'))
+    print(x.insert(6,'o'))
+    print(x.insert(7,'r'))
+    print(x.insert(11,'d'))
+    print(x.insert(12,'p'))
+    print(x.insert(13,'q'))
+    print(x.insert(14,'p'))
+    print(x.insert(15,'q'))
+    print(x.delete(5))
+    print(x.delete(5))
+    print(x.delete(4))
+    print(x.insert(4,'q'))
+    print(x.find(5))
+    print(x.find(4))
