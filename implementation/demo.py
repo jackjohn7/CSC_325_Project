@@ -5,12 +5,12 @@ from random import seed, randint
 
 NUM_THREADS: int = 20
 
-class TestData(NamedTuple):
+class TestNode(NamedTuple):
     key: int
     value: str
     delete_me: bool
 
-def thread_work(kvs: list[TestData], tree: ConcurrentSplayTree):
+def thread_work(kvs: list[TestNode], tree: ConcurrentSplayTree):
     """
     Put the provided splay tree under load by inserting data provided, and deleting elements set to be deleted
     """
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # spawn {NUM_THREADS} threads, each of which will insert strings into tree
     #  this dummy data will need to change
-    threads = [Thread(target=thread_work, args=[[TestData(x, 'temp', False)], tree]) for x in range(NUM_THREADS)]
+    threads = [Thread(target=thread_work, args=[[TestNode(x, 'temp', False)], tree]) for x in range(NUM_THREADS)]
     for t in threads:
         t.start()
 
