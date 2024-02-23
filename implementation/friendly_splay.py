@@ -333,7 +333,7 @@ class ConcurrentSplayTree:
             l.rightCnt = l.rightCnt + nRightCnt
         elif nPlusLeftCnt > pPlusRightCnt:
             grand = parent.parent
-            self.zigRotate(grand,parent,l)
+            self._zig_rotate(grand,parent,l)
             parent.leftCnt = l.rightCnt if l and l.right else 0
             l.rightCnt = l.rightCnt + pPlusRightCnt
 
