@@ -130,7 +130,6 @@ class ConcurrentSplayTree:
         cur = self.root
         #finds node and check if valid
         while (nxt := self.get_next(cur, key)) is not None:
-            #nxt = self.getNext(cur,key)
             cur = nxt
         #if not deleted, return true
         if cur.key == key and not cur.dele:
