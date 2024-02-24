@@ -303,7 +303,8 @@ class ConcurrentSplayTree:
         self._propagate_counter(x)
         if x.left is None or x.right is None:
             # JQ: Should parent be `x.parent`?
-            self._splay_node(parent,x,x.left,x.right)
+            'Yes'
+            self._splay_node(x.parent,x,x.left,x.right)
         else:
             return
 
@@ -322,15 +323,17 @@ class ConcurrentSplayTree:
         nPlusLeftCnt = l.Cnt + l.leftCnt if l else 0
         pPlusRightCnt = parent.Cnt + parent.rightCnt if parent else 0
         nRightCnt = l.rightCnt if l else 0
-        if nRightCnt >= pPlusRightCnt:
+        if nRightCnt >= pPlusRightCnt: #zig-zag condition
             grand = parent.parent
             # JQ: missing `r` argument
-            self._zig_zag_rotate(grand, parent, l)
-            parent.leftCnt = l.right.rightCnt if l and l.right else 0
-            l.rightCnt = l.right.leftCnt
-            l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
-            l.rightCnt = l.rightCnt + nRightCnt
-        elif nPlusLeftCnt > pPlusRightCnt:
+            "Fixed"
+            self._zig_zag_rotate(grand, parent, l,r)
+            if l is not None:
+                parent.leftCnt = l.right.rightCnt
+                l.rightCnt = l.right.leftCnt
+                l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
+                l.rightCnt = l.rightCnt + nRightCnt
+        elif nPlusLeftCnt > pPlusRightCnt: #zig condition
             grand = parent.parent
             self._zig_rotate(grand,parent,l)
             parent.leftCnt = l.rightCnt if l and l.right else 0
