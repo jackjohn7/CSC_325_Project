@@ -320,6 +320,7 @@ class ConcurrentSplayTree:
     
     #called by find and insert(not currently implemented)
     def _splay_node(self, parent: Node, l: Node, r: Node):
+        #get count of left and right subtree of the left 
         nPlusLeftCnt = l.Cnt + l.leftCnt if l else 0
         pPlusRightCnt = parent.Cnt + parent.rightCnt if parent else 0
         nRightCnt = l.rightCnt if l else 0
@@ -328,7 +329,7 @@ class ConcurrentSplayTree:
             # JQ: missing `r` argument
             "Fixed"
             self._zig_zag_rotate(grand, parent, l,r)
-            if l is not None:
+            if l is not None: 'now adjust count of nodes only when left node exist'
                 parent.leftCnt = l.right.rightCnt
                 l.rightCnt = l.right.leftCnt
                 l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
