@@ -360,9 +360,8 @@ class ConcurrentSplayTree:
             return
         self._preorder(x.left)
         if not x.dele:
-            print("%s," % x.key, end='')
+            print(x.key, end='')
         self._preorder(x.right)
-        return
         
     # In-Order traversal
     # Left Subtree -> Node -> Right Subtree
@@ -374,10 +373,9 @@ class ConcurrentSplayTree:
         if x is None:
             return
         if not x.dele:
-            print("%s," % x.key, end='')
+            print(x.key, end='')
         self._inorder(x.left)
         self._inorder(x.right)
-        return
 ################Test Main########################
 if __name__ == "__main__":
     x = ConcurrentSplayTree()
