@@ -353,7 +353,7 @@ class ConcurrentSplayTree:
     # Node->Left Subtree->Right Subtree
     def preorder(self):
         self._preorder(self.root)
-        print('\n')
+
          
     def _preorder(self, x: Node):
         if x is None:
@@ -367,7 +367,7 @@ class ConcurrentSplayTree:
     # Left Subtree -> Node -> Right Subtree
     def inorder(self):
         self._inorder(self.root)
-        print('\n')
+
         
     def _inorder(self, x: Node):
         if x is None:
