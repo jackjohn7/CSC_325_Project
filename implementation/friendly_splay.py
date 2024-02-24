@@ -352,32 +352,32 @@ class ConcurrentSplayTree:
     # Pre-Order traversal
     # Node->Left Subtree->Right Subtree
     def preorder(self):
-        print('\n')
         self._preorder(self.root)
+        print('\n')
          
     def _preorder(self, x: Node):
         if x is None:
             return
         self._preorder(x.left)
         if not x.dele:
-            sys.stdout.write("%s," % x.key)
+            print("%s," % x.key, end='')
         self._preorder(x.right)
-
+        return
         
     # In-Order traversal
     # Left Subtree -> Node -> Right Subtree
     def inorder(self):
-        print('\n')
         self._inorder(self.root)
+        print('\n')
         
     def _inorder(self, x: Node):
         if x is None:
             return
         if not x.dele:
-            sys.stdout.write("%s," % x.key)
+            print("%s," % x.key, end='')
         self._inorder(x.left)
         self._inorder(x.right)
-   
+        return
 ################Test Main########################
 if __name__ == "__main__":
     x = ConcurrentSplayTree()
@@ -405,7 +405,7 @@ if __name__ == "__main__":
     print(x.delete(4))
     print(x.delete(8))
     print(x.delete(6))
- 
+
     
     print(x.insert(4))
     
