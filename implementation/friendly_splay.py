@@ -5,6 +5,7 @@
 #Import Semaphore for critical section handling
 from threading import Lock
 from typing import Any, Optional, Self
+import sys
 
 # data structure that represents a node in the tree
 class Node:
@@ -33,8 +34,7 @@ class Node:
     # parent Node pointer
     parent: Optional[Self]
     
-    def  __init__(self,key,data):
-        self.data = data
+    def  __init__(self,key):
         self.key = key
         self.left = None
         self.right = None
@@ -52,15 +52,16 @@ class ConcurrentSplayTree:
     def __init__(self):
         #root: the root node of BST   
         self.root = None
+        '''Is this removable?'''
         result = False
         
     #######Basic Abstract Operations(Contention friendly)#############
     #returns true if inserted into tree
-    def insert(self,key,value):
+    def insert(self,key):
         result = False
         #if no nodes create root
         if self.root is None:
-            self.root = Node(key,value)
+            self.root = Node(key)
             result = True
             return result
         cur = self.root
@@ -86,10 +87,10 @@ class ConcurrentSplayTree:
         #otherwise, create new leaf based on if the key is greater or less than the current node
         else:
             if cur.key > key:
-                cur.left = Node(key,value)
+                cur.left = Node(key)
                 cur.left.parent = cur
             else:
-                cur.right = Node(key,value)
+                cur.right = Node(key)
                 cur.right.parent = cur
             #set result to true
             result = True
@@ -134,7 +135,8 @@ class ConcurrentSplayTree:
         #if not deleted, return true
         if cur.key == key and not cur.dele:
             result = True
-            self._splay_node(cur, cur.left, cur.right)
+            if cur.left is not None:
+                self._splay_node(cur, cur.left, cur.right)
             cur.Cnt += 1
             
         return result
@@ -186,7 +188,7 @@ class ConcurrentSplayTree:
         lRight = l.right
         xRight = x.right
 
-        p = Node(x.key,x.value)
+        p = Node(x.key)
         p.left = lRight
         p.right = xRight
         l.right = temp
@@ -226,12 +228,12 @@ class ConcurrentSplayTree:
         rRight = r.right
         pRight = parent.right
 
-        temp = Node(x.key,x.value)
+        temp = Node(x.key)
         temp.left = xLeft
         temp.right = rLeft
         r.left = temp
 
-        ptemp = Node(parent.key,parent.value)
+        ptemp = Node(parent.key)
         ptemp.left = rRight
         ptemp.right = parent.Right
             
@@ -329,7 +331,8 @@ class ConcurrentSplayTree:
             # JQ: missing `r` argument
             "Fixed"
             self._zig_zag_rotate(grand, parent, l,r)
-            if l is not None: 'now adjust count of nodes only when left node exist'
+            'now adjust count of nodes only when left node exist'
+            if l.right is not None:
                 parent.leftCnt = l.right.rightCnt
                 l.rightCnt = l.right.leftCnt
                 l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
@@ -346,93 +349,71 @@ class ConcurrentSplayTree:
     def _unlock(self,n):
         n.lock.release()     
 ############################################################
-        ''' hell nawl I aint made for this G
     # Pre-Order traversal
     # Node->Left Subtree->Right Subtree
     def preorder(self):
-        self.__pre_order_helper(self.root)
+        print('\n')
+        self._preorder(self.root)
+         
+    def _preorder(self, x: Node):
+        if x is None:
+            return
+        self._preorder(x.left)
+        if not x.dele:
+            sys.stdout.write("%s," % x.key)
+        self._preorder(x.right)
 
+        
     # In-Order traversal
     # Left Subtree -> Node -> Right Subtree
     def inorder(self):
-        self.__in_order_helper(self.root)
-
-    # Post-Order traversal
-    # Left Subtree -> Right Subtree -> Node
-    def postorder(self):
-        self.__post_order_helper(self.root)
-
-    # search the tree for the key k
-    # and return the corresponding node
-    def search_tree(self, k):
-        x = self.__search_tree_helper(self.root, k)
-        if x != None:
-            self.__splay(x)
-
-    # find the node with the minimum key
-    def minimum(self, node):
-        while node.left != None:
-            node = node.left
-        return node
-
-    # find the node with the maximum key
-    def maximum(self, node):
-        while node.right != None:
-            node = node.right
-        return node
-
-    # find the successor of a given node
-    def successor(self, x):
-        # if the right subtree is not null,
-        # the successor is the leftmost node in the
-        # right subtree
-        if x.right != None:
-            return self.minimum(x.right)
-
-        # else it is the lowest ancestor of x whose
-        # left child is also an ancestor of x.
-        y = x.parent
-        while y != None and x == y.right:
-            x = y
-            y = y.parent
-        return y
-
-    # find the predecessor of a given node
-    def predecessor(self, x):
-        # if the left subtree is not null,
-        # the predecessor is the rightmost node in the 
-        # left subtree
-        if x.left != None:
-            return self.maximum(x.left)
-
-        y = x.parent
-        while y != None and x == y.left:
-            x = y
-            y = y.parent
-        return y
-'''
+        print('\n')
+        self._inorder(self.root)
+        
+    def _inorder(self, x: Node):
+        if x is None:
+            return
+        if not x.dele:
+            sys.stdout.write("%s," % x.key)
+        self._inorder(x.left)
+        self._inorder(x.right)
+   
 ################Test Main########################
 if __name__ == "__main__":
     x = ConcurrentSplayTree()
-    print(x.insert(10,'w'))
-    print(x.insert(4,'q'))
-    print(x.insert(5,'t'))
-    print(x.insert(6,'o'))
-    print(x.insert(2,'r'))
-    print(x.insert(8,'d'))
-    print(x.insert(0,'p'))
-    print(x.insert(1,'q'))
-    print(x.insert(5,'t'))
-    print(x.insert(6,'o'))
-    print(x.insert(7,'r'))
-    print(x.insert(11,'d'))
-    print(x.insert(12,'p'))
-    print(x.insert(13,'q'))
-    print(x.insert(14,'p'))
-    print(x.insert(15,'q'))
+    print(x.insert(10))
+    print(x.insert(4))
+    print(x.insert(5))
+    print(x.insert(6))
+    print(x.insert(2))
+    print(x.insert(8))
+    print(x.insert(0))
+    print(x.insert(1))
+    print(x.insert(5))
+    print(x.insert(6))
+    print(x.insert(7))
+    print(x.insert(11))
+    print(x.insert(12))
+    print(x.insert(13))
+    print(x.insert(14))
+    print(x.insert(15))
+    print(x.inorder())
+    print(x.preorder())
+    
     print(x.delete(5))
-    print(x.delete(5))
+    print(x.delete(6))
     print(x.delete(4))
-    print(x.insert(4,'q'))
+    print(x.delete(8))
+    print(x.delete(6))
+ 
+    
+    print(x.insert(4))
+    
     print(x.find(5))
-    print(x.find(4))
+    print(x.find(5))
+    print(x.find(5))
+    print(x.find(8))
+    print(x.find(13))
+    print(x.find(13))
+    print(x.inorder())
+    print(x.preorder())
