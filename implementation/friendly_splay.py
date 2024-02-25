@@ -51,8 +51,6 @@ class ConcurrentSplayTree:
     def __init__(self):
         #root: the root node of BST   
         self.root = None
-        '''Is this removable?'''
-        result = False
         
     #######Basic Abstract Operations(Contention friendly)#############
     #returns true if inserted into tree
@@ -237,7 +235,7 @@ class ConcurrentSplayTree:
 
         ptemp = Node(parent.key)
         ptemp.left = rRight
-        ptemp.right = parent.right
+        ptemp.right = pRight
             
         r.right = ptemp
             
@@ -306,8 +304,6 @@ class ConcurrentSplayTree:
             
         self._propagate_counter(x)
         if x.left is None or x.right is None:
-            # JQ: Should parent be `x.parent`?
-            'Yes'
             self._splay_node(x.parent,x,x.left,x.right)
         else:
             return
@@ -330,10 +326,7 @@ class ConcurrentSplayTree:
         nRightCnt = l.rightCnt if l else 0
         if nRightCnt >= pPlusRightCnt: #zig-zag condition
             grand = parent.parent
-            # JQ: missing `r` argument
-            "Fixed"
             self._zig_zag_rotate(grand, parent, l,r)
-            'now adjust count of nodes only when left node exist'
             if l.right is not None:
                 parent.leftCnt = l.right.rightCnt
                 l.rightCnt = l.right.leftCnt
@@ -355,7 +348,6 @@ class ConcurrentSplayTree:
     # Node->Left Subtree->Right Subtree
     def preorder(self):
         self._preorder(self.root)
-
          
     def _preorder(self, x: Node):
         if x is None:
@@ -370,18 +362,6 @@ class ConcurrentSplayTree:
     def inorder(self):
         self._inorder(self.root)
 
-    #def inorder_gen(self):
-    #    if self.root is None:
-    #        return []
-
-    #    def aux(n: Node):
-    #        if n.left is not None:
-    #            yield from aux(n.left)
-    #        if not n.remove and not n.dele:
-    #            yield n.key
-    #        if n.right is not None:
-    #            yield from aux(n.right)
-    #    return aux(self.root)
     def inorder_gen(self):
         if self.root is None:
             return []
