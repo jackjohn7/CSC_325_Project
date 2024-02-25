@@ -174,13 +174,15 @@ class ConcurrentSplayTree:
     #as explained in theory
     def _zig_rotate(self, parent, x, l):
         ret = False
-        if parent.remove:
-            return ret
+        if parent is not None:
+            if parent.remove:
+                return ret
         if x is None:
             return ret
         if l is None:
             return ret
-        self._lock(parent)
+        if parent is not None:
+            self._lock(parent)
         self._lock(x)
         self._lock(l)
         ######################critical section#######################
@@ -269,7 +271,7 @@ class ConcurrentSplayTree:
         if not x.dele:
             ######end 1#####
             self._unlock(parent)
-            self._unlock(child)
+            self._unlock(x)
 
             return removed
         if (x.left and x.right is not None):
@@ -337,7 +339,7 @@ class ConcurrentSplayTree:
                 l.rightCnt = l.right.leftCnt
                 l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
                 l.rightCnt = l.rightCnt + nRightCnt
-        elif nPlusLeftCnt > pPlusRightCnt: #zig condition
+        elif nPlusLeftCnt > pPlusRightCnt and parent.parent is not None: #zig condition
             grand = parent.parent
             self._zig_rotate(grand,parent,l)
             parent.leftCnt = l.rightCnt if l and l.right else 0
@@ -375,7 +377,7 @@ class ConcurrentSplayTree:
         def aux(n: Node):
             if n.left is not None:
                 yield from aux(n.left)
-            if not n.remove:
+            if not n.remove and not n.dele:
                 yield n.key
             if n.right is not None:
                 yield from aux(n.right)
