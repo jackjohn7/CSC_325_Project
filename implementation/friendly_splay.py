@@ -190,7 +190,7 @@ class ConcurrentSplayTree:
         p = Node(x.key)
         p.left = lRight
         p.right = xRight
-        l.right = temp
+        l.right = p
         if x == parent.left:
             parent.left = l
         else:
@@ -209,8 +209,9 @@ class ConcurrentSplayTree:
     #explained in theory
     def _zig_zag_rotate(self, grand, parent, x, r):
         ret = False
-        if grand.remove:
-            return ret
+        if grand is not None:
+            if grand.remove:
+                return ret
         if parent is None:
             return ret
         if x is None:
@@ -374,7 +375,8 @@ class ConcurrentSplayTree:
         def aux(n: Node):
             if n.left is not None:
                 yield from aux(n.left)
-            yield n.key
+            if not n.remove:
+                yield n.key
             if n.right is not None:
                 yield from aux(n.right)
         return aux(self.root)
