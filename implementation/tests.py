@@ -6,9 +6,11 @@ from os import getpid
 from pprint import pprint
 from copy import deepcopy
 from traceback import format_exc
+from argparse import ArgumentParser
 
 NUM_THREADS: int = 20
 VERBOSE = True
+RESPONSIBILITY_FACTOR = 20
 
 def verbose_log(text: str):
     if VERBOSE:
@@ -39,7 +41,7 @@ def test(n: int) -> bool:
     # create a splay tree
     tree = ConcurrentSplayTree()
     # states how many datapoints a thread is responsible for
-    responsibility_factor = 20
+    responsibility_factor = RESPONSIBILITY_FACTOR
 
     rands = [choice([True, False]) for _ in range(NUM_THREADS * responsibility_factor)]
 
@@ -98,10 +100,28 @@ def test(n: int) -> bool:
         print(generated)
         return  False
 
+
 if __name__ == "__main__":
-    num_tests = 1000
+    parser = ArgumentParser(
+        prog='Concurrent Splay Tree Test',
+        description='Tests the integrity of concurrency-friendly splay tree after many concurrent operations',
+        epilog='Written by John Branch, Cameron White, and Bradford Stephens'
+    )
+    parser.add_argument('-t', '--threads', default=20)
+    parser.add_argument('-r', '--responsibility', default=20)
+    parser.add_argument('-n', '--number', default=100)
+    parser.add_argument('-v', '--verbose', action='store_true')
+
+    args = parser.parse_args()
+    num_tests = int(args.number)
+
+    VERBOSE = args.verbose
+    NUM_THREADS = int(args.threads)
+    RESPONSIBILITY_FACTOR = int(args.responsibility)
+
     successes = 0
     for i in range(num_tests):
+        print(f"RUNNING: {successes}/{num_tests} tests passed", end='\r')
         if test(i+1):
             successes += 1
-    print(f"{successes}/{num_tests} tests passed")
+    print(f"COMPLETE: {successes}/{num_tests} tests passed")

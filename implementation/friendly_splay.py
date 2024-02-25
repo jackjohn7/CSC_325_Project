@@ -370,18 +370,33 @@ class ConcurrentSplayTree:
     def inorder(self):
         self._inorder(self.root)
 
+    #def inorder_gen(self):
+    #    if self.root is None:
+    #        return []
+
+    #    def aux(n: Node):
+    #        if n.left is not None:
+    #            yield from aux(n.left)
+    #        if not n.remove and not n.dele:
+    #            yield n.key
+    #        if n.right is not None:
+    #            yield from aux(n.right)
+    #    return aux(self.root)
     def inorder_gen(self):
         if self.root is None:
             return []
 
-        def aux(n: Node):
-            if n.left is not None:
-                yield from aux(n.left)
-            if not n.remove and not n.dele:
-                yield n.key
-            if n.right is not None:
-                yield from aux(n.right)
-        return aux(self.root)
+        stack = []
+        node = self.root
+        while stack or node:
+            while node:
+                stack.append(node)
+                node = node.left
+
+            node = stack.pop()
+            if not node.remove and not node.dele:
+                yield node.key
+            node = node.right
         
     def _inorder(self, x: Node):
         if x is None:

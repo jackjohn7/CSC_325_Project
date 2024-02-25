@@ -19,7 +19,21 @@ There are no external dependencies. Python's standart library is sufficient.
 
 Execute the following to run tests:
 ```bash
-python implementation/demo.py # on windows
-python3 implementation/demo.py # on unix/unix-like
+python implementation/tests.py # on windows
+python3 implementation/tests.py # on unix/unix-like
 ```
+
+You can also optionally pass parameters to specify certain details
+```bash
+python3 implementation/tests.py -t 40 -r 40 -n 80 -v
+```
+
+These parameters are as follows:
+
+| Abbreviation | Option | Description | Type |
+|--------|--------------|-------------|------|
+| `-t` | `--threads` | Number of threads to use (default: 20) | int |
+| `-r` | `--responsibility` | Number of data-points per thread (default: 20) | int |
+| `-n` | `--number` | Number of tests to run (default: 100) | int |
+| `-v` | `--verbose` | Print verbose output (default: False) | bool |
 
