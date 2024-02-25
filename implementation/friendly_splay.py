@@ -5,7 +5,6 @@
 #Import Semaphore for critical section handling
 from threading import Lock
 from typing import Any, Optional, Self
-import sys
 
 # data structure that represents a node in the tree
 class Node:
@@ -26,7 +25,7 @@ class Node:
     # marked if node was removed by zigRight rotation
     zig: bool
     # total number of operations  that had been performed on the node
-    Cnt: int
+    cnt: int
     # left subtree count
     leftCnt: int
     # right subtreee count
@@ -42,7 +41,7 @@ class Node:
         self.remove = False
         self.dele = False
         self.zig = False
-        self.Cnt = 0
+        self.cnt = 0
         self.leftCnt = 0
         self.rightCnt = 0
         self.parent = None
@@ -82,7 +81,7 @@ class ConcurrentSplayTree:
             if(cur.dele):
                 cur.parent 
                 cur.dele = False
-                cur.Cnt += 1
+                cur.cnt += 1
                 result = True
         #otherwise, create new leaf based on if the key is greater or less than the current node
         else:
@@ -137,7 +136,7 @@ class ConcurrentSplayTree:
             result = True
             if cur.left is not None:
                 self._splay_node(cur, cur.left, cur.right)
-            cur.Cnt += 1
+            cur.cnt += 1
             
         return result
     
@@ -235,7 +234,7 @@ class ConcurrentSplayTree:
 
         ptemp = Node(parent.key)
         ptemp.left = rRight
-        ptemp.right = parent.Right
+        ptemp.right = parent.right
             
         r.right = ptemp
             
@@ -312,7 +311,7 @@ class ConcurrentSplayTree:
 
     def _propagate_counter(self,x):
         if x.left is None:
-            x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.Cnt
+            x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.cnt
         else:
             x.leftCnt = 0
     #called by background thread to perform long splay operation and physically delete nodes
@@ -323,8 +322,8 @@ class ConcurrentSplayTree:
     #called by find and insert(not currently implemented)
     def _splay_node(self, parent: Node, l: Node, r: Node):
         #get count of left and right subtree of the left 
-        nPlusLeftCnt = l.Cnt + l.leftCnt if l else 0
-        pPlusRightCnt = parent.Cnt + parent.rightCnt if parent else 0
+        nPlusLeftCnt = l.cnt + l.leftCnt if l else 0
+        pPlusRightCnt = parent.cnt + parent.rightCnt if parent else 0
         nRightCnt = l.rightCnt if l else 0
         if nRightCnt >= pPlusRightCnt: #zig-zag condition
             grand = parent.parent
@@ -368,6 +367,17 @@ class ConcurrentSplayTree:
     def inorder(self):
         self._inorder(self.root)
 
+    def inorder_gen(self):
+        if self.root is None:
+            return []
+
+        def aux(n: Node):
+            if n.left is not None:
+                yield from aux(n.left)
+            yield n.key
+            if n.right is not None:
+                yield from aux(n.right)
+        return aux(self.root)
         
     def _inorder(self, x: Node):
         if x is None:
