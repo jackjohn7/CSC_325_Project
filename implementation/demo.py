@@ -1,7 +1,7 @@
 from typing import NamedTuple
 from friendly_splay import ConcurrentSplayTree
 from threading import Thread
-from random import choice
+from random import choice, randint
 from os import getpid
 from pprint import pprint
 from copy import deepcopy
@@ -26,7 +26,6 @@ def thread_work(kvs: list[TestNode], tree: ConcurrentSplayTree):
         tree.insert(k)
 
     for k, _ in filter(lambda x: x.delete_me, kvs):
-        print(f"deleting {k} because {_}")
         tree.delete(k)
 
     for k, _ in filter(lambda x: not x.delete_me, kvs):
@@ -40,12 +39,15 @@ def test(n: int) -> bool:
     # create a splay tree
     tree = ConcurrentSplayTree()
     # states how many datapoints a thread is responsible for
-    responsibility_factor = 4
+    responsibility_factor = 20
 
     rands = [choice([True, False]) for _ in range(NUM_THREADS * responsibility_factor)]
 
-    dummy_data = [TestNode(x, rands[x]) for x in range(NUM_THREADS * responsibility_factor)]
-    print(dummy_data)
+    dummy_data = []
+    for x in range(NUM_THREADS * responsibility_factor):
+        a = dummy_data[-1].key+1 if len(dummy_data) > 0 else 0
+        dummy_data.append(TestNode(randint(a, a + 4), rands[x]))
+        
     copy_data = deepcopy(dummy_data)
 
     try:
@@ -69,8 +71,6 @@ def test(n: int) -> bool:
             if should_be_deleted:
                 if tree.find(k):
                     raise Exception(f"FAIL: Key {k} should have been deleted")
-                else:
-                    print(f"key {k} was not found which is good")
             else:
                 if not tree.find(k):
                     raise Exception(f"FAIL: Key {k} was not found when it should have been")
@@ -84,7 +84,6 @@ def test(n: int) -> bool:
         verbose_log("Tree is still in valid BST form")
 
         verbose_log(f"{n} OK: Test Passed")
-        print(generated)
         return True
 
     except Exception as e:
@@ -100,7 +99,7 @@ def test(n: int) -> bool:
         return  False
 
 if __name__ == "__main__":
-    num_tests = 100
+    num_tests = 1000
     successes = 0
     for i in range(num_tests):
         if test(i+1):
