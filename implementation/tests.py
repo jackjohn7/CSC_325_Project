@@ -86,6 +86,7 @@ def test(n: int) -> bool:
         verbose_log("Tree is still in valid BST form")
 
         verbose_log(f"{n} OK: Test Passed")
+        tree.cleanup()
         return True
 
     except Exception as e:

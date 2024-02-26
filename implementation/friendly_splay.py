@@ -3,8 +3,9 @@
 
 
 #Import Semaphore for critical section handling
-from threading import Lock
+from threading import Lock, Event, Thread
 from typing import Any, Optional, Self
+from os import getpid
 
 # data structure that represents a node in the tree
 class Node:
@@ -47,10 +48,24 @@ class Node:
         self.parent = None
         
 class ConcurrentSplayTree:
-    #Note* tree does not allow duplicates
+    # background cleanup daemon
+    daemon: Thread
+    # states whether or not the tree is in use (true until GC)
+    killed: Event = Event()
     def __init__(self):
         #root: the root node of BST   
         self.root = None
+        self.daemon = Thread(target=self._background_task)
+        self.daemon.start()
+
+    def cleanup(self):
+        """You must call this to cleanup your tree. Otherwise, you will leak threads"""
+        self.killed.set()
+        self.daemon.join()
+
+    def _background_task(self):
+        while not self.killed.wait(0.1):
+            self._longSplayDFS(self.root)
         
     #######Basic Abstract Operations(Contention friendly)#############
     #returns true if inserted into tree
@@ -317,10 +332,6 @@ class ConcurrentSplayTree:
             x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.cnt
         else:
             x.leftCnt = 0
-    #called by background thread to perform long splay operation and physically delete nodes
-    def _background_long_splay(self):
-        while True:
-            self._longSplayDFS(self.root)
     
     #called by find and insert(not currently implemented)
     def _splay_node(self, parent: Node, l: Node, r: Node):
@@ -328,19 +339,20 @@ class ConcurrentSplayTree:
         nPlusLeftCnt = l.cnt + l.leftCnt if l else 0
         pPlusRightCnt = parent.cnt + parent.rightCnt if parent else 0
         nRightCnt = l.rightCnt if l else 0
-        if nRightCnt >= pPlusRightCnt: #zig-zag condition
-            grand = parent.parent
-            self._zig_zag_rotate(grand, parent, l,r)
-            if l is not None and l.right is not None:
-                parent.leftCnt = l.right.rightCnt
-                l.rightCnt = l.right.leftCnt
-                l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
-                l.rightCnt = l.rightCnt + nRightCnt
-        elif nPlusLeftCnt > pPlusRightCnt and parent.parent is not None: #zig condition
-            grand = parent.parent
-            self._zig_rotate(grand,parent,l)
-            parent.leftCnt = l.rightCnt if l and l.right else 0
-            l.rightCnt = l.rightCnt + pPlusRightCnt
+        if parent is not None:
+            if nRightCnt >= pPlusRightCnt and parent.parent is not None: #zig-zag condition
+                grand = parent.parent
+                self._zig_zag_rotate(grand, parent, l,r)
+                if l is not None and l.right is not None:
+                    parent.leftCnt = l.right.rightCnt
+                    l.rightCnt = l.right.leftCnt
+                    l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
+                    l.rightCnt = l.rightCnt + nRightCnt
+            elif nPlusLeftCnt > pPlusRightCnt and parent.parent is not None: #zig condition
+                grand = parent.parent
+                self._zig_rotate(grand,parent,l)
+                parent.leftCnt = l.rightCnt if l and l.right else 0
+                l.rightCnt = l.rightCnt + pPlusRightCnt
 
 ################critical section handling###################
     def _lock(self,n):
