@@ -281,14 +281,18 @@ class ConcurrentSplayTree:
         elif(x.left is not None):
             child = x.left
         else:
-            child =x.right
-            x.left = parent
-            x.right = parent
+            child = x.right
+        if x == parent.left:
+            parent.left = child
+        else:
+            parent.right = child
+        x.left = parent   
+        x.right = parent
         x.remove = True
         removed = True
         ######end 3#####
         self._unlock(parent)
-        self._unlock(child)
+        self._unlock(x)
         return removed
         
     def _longSplayDFS(self, x: Optional[Node]):
@@ -304,12 +308,12 @@ class ConcurrentSplayTree:
             
         self._propagate_counter(x)
         if x.left is None or x.right is None:
-            self._splay_node(x.parent,x,x.left,x.right)
+            self._splay_node(x.parent,x.left,x.right)
         else:
             return
 
     def _propagate_counter(self,x):
-        if x.left is None:
+        if x.left is not None:
             x.leftCnt = x.left.leftCnt + x.left.rightCnt  + x.left.cnt
         else:
             x.leftCnt = 0
@@ -327,7 +331,7 @@ class ConcurrentSplayTree:
         if nRightCnt >= pPlusRightCnt: #zig-zag condition
             grand = parent.parent
             self._zig_zag_rotate(grand, parent, l,r)
-            if l.right is not None:
+            if l is not None and l.right is not None:
                 parent.leftCnt = l.right.rightCnt
                 l.rightCnt = l.right.leftCnt
                 l.right.rightCnt = l.right.rightCnt + pPlusRightCnt
@@ -422,5 +426,8 @@ if __name__ == "__main__":
     print(x.find(8))
     print(x.find(13))
     print(x.find(13))
+    print(x.inorder())
+    print(x.preorder())
+    x._longSplayDFS(x.root)
     print(x.inorder())
     print(x.preorder())
